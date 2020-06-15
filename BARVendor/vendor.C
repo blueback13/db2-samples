@@ -468,8 +468,8 @@ int sqluvint ( struct Init_input   *in,
          // -------------------------------------------------------------------
          rc = getLatestCopy (handle->QueryDescPtr,
                              handle->ObjectDescPtr,
-                            &handle->xbsaHandle,
-                             in->DB2_session->nodeNum );
+                             (sqluint32*)&handle->xbsaHandle,
+                             0 /* in->DB2_session->nodeNum*/ );
          if (rc != 0)
          {
             SET_ERR_REASON(return_code, rc);
@@ -506,7 +506,7 @@ int sqluvint ( struct Init_input   *in,
             tptr+=strlen("/NODE");
 
          DBPartitionNum = (sqluint16)atoi(tptr);
-         if (in->DB2_session->nodeNum == DBPartitionNum)
+         if (/*in->DB2_session->nodeNum*/0 == DBPartitionNum)
          {
             // Check the sequence number.  If it's a 1, then this is
             //       a new backup image.  If it's not a 1, then it's
@@ -1162,7 +1162,7 @@ int sqluvdel ( Init_input   * in,
            PATH_SEP_STR, mediaHeader->clientDBAlias);
 
    sprintf(&objName.objectSpaceName[strlen(objName.objectSpaceName)], "%sNODE%4.4d", 
-         PATH_SEP_STR, in->DB2_session->nodeNum);
+           PATH_SEP_STR, 0 /* in->DB2_session->nodeNum */);
 
    sprintf(&objName.objectSpaceName[strlen(objName.objectSpaceName)], "%s%s.%s.*",
            PATH_SEP_STR, "*" SQLUV_NAME_SUFFIX, mediaHeader->timestamp);
@@ -1341,7 +1341,7 @@ int  bldWriteObjDesc ( ObjectDescriptor  *objDesc,
    sprintf(objDesc->objName.objectSpaceName, "/%s", db2_info->alias);
 
    sprintf(&objDesc->objName.objectSpaceName[strlen(objDesc->objName.objectSpaceName)],
-          "%sNODE%4.4d", PATH_SEP_STR, db2_info->nodeNum);
+           "%sNODE%4.4d", PATH_SEP_STR, 0 /* db2_info->nodeNum */);
 
    if ((db2_info->filename == NULL) || (db2_info->filename[0] == '\0'))
    {
@@ -1395,7 +1395,7 @@ int  bldReadObjDesc ( ObjectDescriptor  *objDesc,
    char *         timestamp      = (char*)"";
 
    sprintf(&qryDesc->objName.objectSpaceName[strlen(qryDesc->objName.objectSpaceName)],
-           "%s%sNODE%4.4d", PATH_SEP_STR, extraSeparator, db2_info->nodeNum);
+           "%s%sNODE%4.4d", PATH_SEP_STR, extraSeparator, 0 /* db2_info->nodeNum */);
 
    if (*db2_info->sequence == '0')
    {
