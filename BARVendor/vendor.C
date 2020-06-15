@@ -593,7 +593,7 @@ success: // Construct return structure.
    VendorInfo = out->vendor_session = (Vendor_info *) cptr;
    cptr += sizeof (Vendor_info);
 
-   out->vendor_session->vendor_id = "XBSA";
+   out->vendor_session->vendor_id = (char*)"XBSA";
 
    // Version.
    sprintf(cptr, "%d", ApiVersion.version);
@@ -1187,13 +1187,16 @@ int sqluvdel ( Init_input   * in,
          // Double the size, reallocate and initialize
          // -------------------------------------------------------------------
          currentMaxObjsAllocate += currentMaxObjsAllocate;
-         realloc(fileListPtr, sizeof(OBJECT_IDENT)*currentMaxObjsAllocate);
-         if (fileListPtr == NULL)
+         OBJECT_IDENT *newFileListPtr = (OBJECT_IDENT*)realloc(fileListPtr,
+                                   sizeof(OBJECT_IDENT)*currentMaxObjsAllocate);
+         if (newFileListPtr == NULL)
          {
             rc = SQLUV_INIT_FAILED;
             SET_ERR_REASON(return_code, rc);
             goto exit;
          }
+         // fileListPtr was already freed by realloc
+         fileListPtr = newFileListPtr;
          memset((void *)&fileListPtr[(currentMaxObjsAllocate/2)],0x00,
                 (sizeof(OBJECT_IDENT)*(currentMaxObjsAllocate/2)));
       }
@@ -1388,7 +1391,7 @@ int  bldReadObjDesc ( ObjectDescriptor  *objDesc,
    const char *   extraSeparator = PATH_SEP_STR;
 #endif
    const char *   filename       = "*" SQLUV_NAME_SUFFIX;
-   char *         timestamp      = "";
+   char *         timestamp      = (char*)"";
 
    sprintf(&qryDesc->objName.objectSpaceName[strlen(qryDesc->objName.objectSpaceName)],
            "%s%sNODE%4.4d", PATH_SEP_STR, extraSeparator, db2_info->nodeNum);
@@ -1438,9 +1441,9 @@ int  getLatestCopy ( QueryDescriptor     * QueryDescPtr,
    char                  objSpaceName [BSA_MAX_OSNAME+1] = {0x00};
    char                  pathName [BSA_MAX_OSNAME+1] = {0x00};
    char                 *tptr                        = NULL;
-   int                   foundTSBackup               = FALSE;
-   int                   foundDBBackup               = FALSE;
-   int                   foundABackup                = FALSE;
+   bool                  foundTSBackup               = false;
+   bool                  foundDBBackup               = false;
+   bool                  foundABackup                = false;
    sqluint16             DBPartitionNum              = 0;
 
    xbsaRC = BSAQueryObject( *Handle,QueryDescPtr, objDataPtr);
@@ -1471,12 +1474,12 @@ int  getLatestCopy ( QueryDescriptor     * QueryDescPtr,
             || !strncmp((objDataPtr->objName.pathName)+1,
                         SQLUV_NAME_DB, sizeof(SQLUV_NAME_DB)-1))
         {
-           foundDBBackup = TRUE;
+           foundDBBackup = true;
         }
         else if (!strncmp((objDataPtr->objName.pathName)+1,
                            SQLUV_NAME_TSP, sizeof(SQLUV_NAME_TSP)-1))
         {
-           foundTSBackup = TRUE;
+           foundTSBackup = true;
         }
 
         // Initialize image info when we find first matching backup image.
@@ -1486,7 +1489,7 @@ int  getLatestCopy ( QueryDescriptor     * QueryDescPtr,
            strncpy(objSpaceName, objDataPtr->objName.objectSpaceName,BSA_MAX_OSNAME);
            tptr = strrchr (pathName, '.');
 
-           foundABackup = TRUE;
+           foundABackup = true;
 
            *tptr = '\0';            // remove the sequence no. fr the fname.
            CNamelen = strlen(pathName);
@@ -1515,11 +1518,11 @@ int  getLatestCopy ( QueryDescriptor     * QueryDescPtr,
 
 exit:
 
-   if (foundTSBackup && foundDBBackup)
+   if ((foundTSBackup == true) && (foundDBBackup == true))
    {
       rc = SQLUV_OBJS_FOUND;
    }
-   else if (foundABackup)
+   else if (foundABackup == true)
    {
       strcpy( objDataPtr->objName.objectSpaceName, objSpaceName );
       strcpy( objDataPtr->objName.pathName, pathName );
